@@ -13,6 +13,11 @@ const (
 	//keywords
 	LET      = "LET"
 	FUNCTION = "FUNCTION"
+	IF       = "IF"
+	ELSE     = "ELSE"
+	RETURN   = "RETURN"
+	TRUE     = "TRUE"
+	FALSE    = "FALSE"
 	//SYMBOLS
 	LPAREN    = "("
 	RPAREN    = ")"
@@ -21,17 +26,27 @@ const (
 	RBRACES   = "}"
 	COMMA     = ","
 	//OPERATORS
-	SUM      = "+"
-	MINUS    = "-"
-	ASSIGN   = "="
-	MULTIPLY = "*"
-	DIVIDE   = "/"
+	SUM         = "+"
+	MINUS       = "-"
+	ASSIGN      = "="
+	EQ          = "=="
+	NOT         = "!"
+	NOT_EQ      = "!="
+	ASTERISK    = "*"
+	DIVIDE      = "/"
+	LESSTHAN    = "<"
+	GREATERTHAN = ">"
 	//MICEL
 	EOF     = "EOF"
 	ILLEGAL = "ILLEGAL"
 )
 
 var Keywords = map[string]TokenType{ // maps cannot be created as const
-	"fn":  FUNCTION,
-	"let": LET,
+	"fn":     FUNCTION,
+	"let":    LET,
+	"if":     IF,
+	"else":   ELSE,
+	"return": RETURN,
+	"true":   TRUE,
+	"false":  FALSE,
 }
