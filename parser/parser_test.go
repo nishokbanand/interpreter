@@ -8,7 +8,7 @@ import (
 	"github.com/nishokbanand/interpreter/lexer"
 )
 
-func TestParser(t *testing.T) {
+func TestLetStatments(t *testing.T) {
 	input := `let x = 5;
 	let y = 20;
 	let z = 123123;
@@ -66,4 +66,26 @@ func checkParseErrors(t *testing.T, p *Parser) {
 		t.Errorf("Error %d : %s", i, msg)
 	}
 	t.FailNow()
+}
+func TestReturnStatement(t *testing.T) {
+	input := `
+	return 5;
+	return 10000;
+	`
+	l := lexer.New(input)
+	p := New(l)
+	program := p.ParseProgram()
+	checkParseErrors(t, p)
+	if program == nil {
+		t.Fatalf("parseProgram returned nil")
+	}
+	fmt.Printf("%#v\n", program)
+	if len(program.Statements) != 2 {
+		t.Fatalf("expected number of statements :2 , got %d", len(program.Statements))
+	}
+	for _, stmt := range program.Statements {
+		if returnStmt, ok := stmt.(*ast.ReturnStatement); !ok {
+			t.Fatalf("expected ReturnStatement, got :%T", returnStmt)
+		}
+	}
 }
