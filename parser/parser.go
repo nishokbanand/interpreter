@@ -10,6 +10,17 @@ import (
 	"github.com/nishokbanand/interpreter/token"
 )
 
+var precedences = map[token.TokenType]int{
+	token.EQ:          EQUALS,
+	token.NOT_EQ:      EQUALS,
+	token.LESSTHAN:    LESSGREATER,
+	token.GREATERTHAN: LESSGREATER,
+	token.SUM:         SUM,
+	token.MINUS:       SUM,
+	token.DIVIDE:      PRODUCT,
+	token.ASTERISK:    PRODUCT,
+}
+
 const (
 	_ int = iota
 	LOWEST
@@ -23,7 +34,7 @@ const (
 
 type (
 	PrefixFns func() ast.ExpressionNode
-	InfixFns  func(*ast.ExpressionNode) ast.ExpressionNode
+	InfixFns  func(ast.ExpressionNode) ast.ExpressionNode
 )
 
 type Parser struct {
@@ -46,10 +57,21 @@ func New(l *lexer.Lexer) *Parser {
 	p := &Parser{l: l, errros: []string{}}
 	p.nextToken()
 	p.nextToken()
+	p.prefixfns = make(map[token.TokenType]PrefixFns)
 	p.registerPrefixFns(token.IDENT, p.parseIdentifier)
 	p.registerPrefixFns(token.INT, p.parseIntergerExpression)
 	p.registerPrefixFns(token.NOT, p.parsePrefixExpression)
 	p.registerPrefixFns(token.MINUS, p.parsePrefixExpression)
+	//infix
+	p.infixfns = make(map[token.TokenType]InfixFns)
+	p.registerInfixFns(token.SUM, p.parseInfixExpression)
+	p.registerInfixFns(token.MINUS, p.parseInfixExpression)
+	p.registerInfixFns(token.EQ, p.parseInfixExpression)
+	p.registerInfixFns(token.NOT_EQ, p.parseInfixExpression)
+	p.registerInfixFns(token.DIVIDE, p.parseInfixExpression)
+	p.registerInfixFns(token.ASTERISK, p.parseInfixExpression)
+	p.registerInfixFns(token.LESSTHAN, p.parseInfixExpression)
+	p.registerInfixFns(token.GREATERTHAN, p.parseInfixExpression)
 	return p
 }
 
@@ -151,6 +173,14 @@ func (p *Parser) parseExpression(precedent int) ast.ExpressionNode {
 		return nil
 	}
 	leftExp := prefix()
+	for p.peekToken.Type != token.SEMICOLON && precedent < p.peekPrecedence() {
+		infix := p.infixfns[p.peekToken.Type]
+		if infix == nil {
+			return leftExp
+		}
+		p.nextToken()
+		leftExp = infix(leftExp)
+	}
 	return leftExp
 }
 
@@ -176,4 +206,25 @@ func (p *Parser) parsePrefixExpression() ast.ExpressionNode {
 	p.nextToken()
 	stmt.Right = p.parseExpression(PREFIX)
 	return stmt
+}
+
+func (p *Parser) parseInfixExpression(left ast.ExpressionNode) ast.ExpressionNode {
+	stmt := &ast.InfixExpression{Token: p.currToken, Operator: p.currToken.Literal, Left: left}
+	precedence := p.currPrecendence()
+	p.nextToken()
+	stmt.Right = p.parseExpression(precedence)
+	return stmt
+}
+
+func (p *Parser) currPrecendence() int {
+	if precedence, ok := precedences[p.currToken.Type]; ok {
+		return precedence
+	}
+	return LOWEST
+}
+func (p *Parser) peekPrecedence() int {
+	if precedence, ok := precedences[p.peekToken.Type]; ok {
+		return precedence
+	}
+	return LOWEST
 }

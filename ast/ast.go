@@ -107,7 +107,12 @@ type ExpressionStatement struct {
 
 func (e *ExpressionStatement) statementNode()       {}
 func (e *ExpressionStatement) TokenLiteral() string { return e.Token.Literal }
-func (e *ExpressionStatement) String() string       { return e.Token.Literal }
+func (e *ExpressionStatement) String() string {
+	if e.Expression != nil {
+		return e.Expression.String()
+	}
+	return ""
+}
 
 type IntegerLiteral struct {
 	Token token.Token
@@ -126,11 +131,30 @@ type PrefixExpression struct { //two prefix Exp are there ! and -
 
 func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
 func (pe *PrefixExpression) expressionNode()      {}
-func (pe *PrefixExpression) String() string       { return pe.Token.Literal }
+func (pe *PrefixExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(pe.Operator)
+	out.WriteString(pe.Right.String())
+	out.WriteString(")")
+	return out.String()
+}
 
 type InfixExpression struct {
 	Token    token.Token
 	Operator string
 	Left     ExpressionNode
 	Right    ExpressionNode
+}
+
+func (ie *InfixExpression) TokenLiteral() string { return ie.Token.Literal }
+func (ie *InfixExpression) expressionNode()      {}
+func (ie *InfixExpression) String() string {
+	var out bytes.Buffer
+	out.WriteString("(")
+	out.WriteString(ie.Left.String())
+	out.WriteString(" " + ie.Operator + " ")
+	out.WriteString(ie.Right.String())
+	out.WriteString(")")
+	return out.String()
 }
