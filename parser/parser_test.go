@@ -6,6 +6,7 @@ import (
 
 	"github.com/nishokbanand/interpreter/ast"
 	"github.com/nishokbanand/interpreter/lexer"
+	"github.com/nishokbanand/interpreter/token"
 )
 
 func TestLetStatments(t *testing.T) {
