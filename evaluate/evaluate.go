@@ -14,7 +14,7 @@ var (
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evalStatements(node.Statements)
+		return evalProgram(node.Statements)
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
 	case *ast.Boolean:
@@ -26,6 +26,13 @@ func Eval(node ast.Node) object.Object {
 		left := Eval(node.Left)
 		right := Eval(node.Right)
 		return evalInfixExpression(node.Operator, left, right)
+	case *ast.BlockStatement:
+		return evalStatements(node.Statements)
+	case *ast.IfExpression:
+		return evalIfExpression(node)
+	case *ast.ReturnStatement:
+		val := Eval(node.Value)
+		return &object.ReturnValue{Value: val}
 	case *ast.IntegerLiteral:
 		return &object.Integer{
 			Value: node.Value,
@@ -41,10 +48,23 @@ func nativeBooltoBooleanObject(input bool) *object.Boolean {
 	return FALSE
 }
 
+func evalProgram(stmts []ast.StatmentNode) object.Object {
+	var result object.Object
+	for _, stmt := range stmts {
+		result = Eval(stmt)
+		if returnValue, ok := result.(*object.ReturnValue); ok {
+			return returnValue.Value
+		}
+	}
+	return result
+}
 func evalStatements(stmts []ast.StatmentNode) object.Object {
 	var result object.Object
 	for _, stmt := range stmts {
 		result = Eval(stmt)
+		if result != nil && result.Type() == object.RETURN_OBJ {
+			return result
+		}
 	}
 	return result
 }
@@ -120,4 +140,28 @@ func evaluateIntegerInfixExpression(operator string, left object.Object, right o
 		return nativeBooltoBooleanObject(leftVal == rightVal)
 	}
 	return NULL
+}
+
+func evalIfExpression(node *ast.IfExpression) object.Object {
+	condition := Eval(node.Condition)
+	if isTruthy(condition) {
+		return Eval(node.Consequence)
+	} else if node.Alternative != nil {
+		return Eval(node.Alternative)
+	} else {
+		return NULL
+	}
+}
+
+func isTruthy(condition object.Object) bool {
+	switch condition {
+	case TRUE:
+		return true
+	case FALSE:
+		return false
+	case NULL:
+		return false
+	default:
+		return true
+	}
 }
