@@ -6,7 +6,7 @@ import (
 	"io"
 
 	"github.com/nishokbanand/interpreter/lexer"
-	"github.com/nishokbanand/interpreter/token"
+	"github.com/nishokbanand/interpreter/parser"
 )
 
 func Start(in io.Reader, out io.Writer) {
@@ -19,8 +19,19 @@ func Start(in io.Reader, out io.Writer) {
 		}
 		input := scanner.Text()
 		lexer := lexer.New(input)
-		for tok := lexer.NextToken(); tok.Type != token.EOF; tok = lexer.NextToken() {
-			fmt.Printf("%#v\n", tok)
+		parser := parser.New(lexer)
+		program := parser.ParseProgram()
+		if len(parser.Errors()) != 0 {
+			printParseErrors(out, parser.Errors())
+			continue
 		}
+		io.WriteString(out, program.String())
+		io.WriteString(out, "\n")
+	}
+}
+
+func printParseErrors(out io.Writer, errors []string) {
+	for _, msg := range errors {
+		io.WriteString(out, "\t"+msg+"\n")
 	}
 }

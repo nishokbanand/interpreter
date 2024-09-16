@@ -2,6 +2,7 @@ package ast
 
 import (
 	"bytes"
+	"strings"
 
 	"github.com/nishokbanand/interpreter/token"
 )
@@ -191,8 +192,56 @@ func (bs *BlockStatement) TokenLiteral() string { return bs.Token.Literal }
 func (bs *BlockStatement) expressionNode()      {}
 func (bs *BlockStatement) String() string {
 	var out bytes.Buffer
+	out.WriteString("{")
 	for _, s := range bs.Statements {
 		out.WriteString(s.String())
 	}
+	out.WriteString("}")
+	return out.String()
+}
+
+type FunctionLiteral struct {
+	Token      token.Token //fn
+	Parameters []*Identifier
+	Body       BlockStatement
+}
+
+func (fn *FunctionLiteral) TokenLiteral() string { return fn.Token.Literal }
+func (fn *FunctionLiteral) expressionNode()      {}
+func (fn *FunctionLiteral) String() string {
+	var out bytes.Buffer
+	params := []string{}
+	for _, param := range fn.Parameters {
+		params = append(params, param.String())
+	}
+	out.WriteString(fn.TokenLiteral())
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ","))
+	out.WriteString(")")
+	out.WriteString(fn.Body.String())
+	return out.String()
+}
+
+// add (5,6) or hello(5,func(5,4))
+type CallExpression struct {
+	Token     token.Token
+	Function  ExpressionNode
+	Arguments []ExpressionNode
+}
+
+func (c *CallExpression) TokenLiteral() string { return c.Token.Literal }
+
+func (c *CallExpression) expressionNode() {}
+
+func (c *CallExpression) String() string {
+	var out bytes.Buffer
+	args := []string{}
+	for _, arg := range c.Arguments {
+		args = append(args, arg.String())
+	}
+	out.WriteString(c.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ","))
+	out.WriteString(")")
 	return out.String()
 }
