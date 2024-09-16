@@ -66,6 +66,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFns(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefixFns(token.IF, p.parseIfExpression)
 	p.registerPrefixFns(token.FUNCTION, p.parseFunctionExpression)
+	p.registerPrefixFns(token.TRUE, p.parseBoolean)
+	p.registerPrefixFns(token.FALSE, p.parseBoolean)
 	//infix
 	p.infixfns = make(map[token.TokenType]InfixFns)
 	p.registerInfixFns(token.SUM, p.parseInfixExpression)
@@ -352,4 +354,11 @@ func (p *Parser) parseCallArguments() []ast.ExpressionNode {
 	}
 	return args
 
+}
+
+func (p *Parser) parseBoolean() ast.ExpressionNode {
+	return &ast.Boolean{
+		Token: p.currToken,
+		Value: p.currToken.Type == token.TRUE,
+	}
 }
