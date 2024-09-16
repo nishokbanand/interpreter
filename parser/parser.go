@@ -259,7 +259,6 @@ func (p *Parser) parseIfExpression() ast.ExpressionNode {
 	if !p.expectPeek(token.RPAREN) {
 		return nil
 	}
-	p.nextToken()
 	if !p.expectPeek(token.LBRACES) {
 		return nil
 	}
@@ -279,7 +278,8 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 		Token: p.currToken,
 	}
 	block.Statements = []ast.StatmentNode{}
-	for p.currToken.Type != token.RPAREN && p.currToken.Type != token.EOF {
+	p.nextToken()
+	for p.currToken.Type != token.RBRACES && p.currToken.Type != token.EOF {
 		stmt := p.parseStatement()
 		if stmt != nil {
 			block.Statements = append(block.Statements, stmt)
