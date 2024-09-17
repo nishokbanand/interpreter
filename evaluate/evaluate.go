@@ -1,6 +1,8 @@
 package evaluate
 
 import (
+	"fmt"
+
 	"github.com/nishokbanand/interpreter/ast"
 	"github.com/nishokbanand/interpreter/object"
 )
@@ -10,6 +12,16 @@ var (
 	FALSE = &object.Boolean{Value: false}
 	NULL  = &object.NULL{}
 )
+
+func newError(format string, a ...interface{}) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(format, a...)}
+}
+func isError(obj object.Object) bool {
+	if obj != nil {
+		return obj.Type() == object.ERROR_OBJ
+	}
+	return false
+}
 
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
@@ -21,10 +33,19 @@ func Eval(node ast.Node) object.Object {
 		return nativeBooltoBooleanObject(node.Value)
 	case *ast.PrefixExpression:
 		right := Eval(node.Right)
+		if isError(right) {
+			return right
+		}
 		return evalPrefixExpression(node.Operator, right)
 	case *ast.InfixExpression:
 		left := Eval(node.Left)
+		if isError(left) {
+			return left
+		}
 		right := Eval(node.Right)
+		if isError(right) {
+			return right
+		}
 		return evalInfixExpression(node.Operator, left, right)
 	case *ast.BlockStatement:
 		return evalStatements(node.Statements)
@@ -32,6 +53,9 @@ func Eval(node ast.Node) object.Object {
 		return evalIfExpression(node)
 	case *ast.ReturnStatement:
 		val := Eval(node.Value)
+		if isError(val) {
+			return val
+		}
 		return &object.ReturnValue{Value: val}
 	case *ast.IntegerLiteral:
 		return &object.Integer{
@@ -52,8 +76,13 @@ func evalProgram(stmts []ast.StatmentNode) object.Object {
 	var result object.Object
 	for _, stmt := range stmts {
 		result = Eval(stmt)
-		if returnValue, ok := result.(*object.ReturnValue); ok {
-			return returnValue.Value
+		if result != nil {
+			switch result := result.(type) {
+			case *object.ReturnValue:
+				return result.Value
+			case *object.Error:
+				return result
+			}
 		}
 	}
 	return result
@@ -62,8 +91,11 @@ func evalStatements(stmts []ast.StatmentNode) object.Object {
 	var result object.Object
 	for _, stmt := range stmts {
 		result = Eval(stmt)
-		if result != nil && result.Type() == object.RETURN_OBJ {
-			return result
+		if result != nil {
+			rt := result.Type()
+			if rt == object.ERROR_OBJ || rt == object.RETURN_OBJ {
+				return result
+			}
 		}
 	}
 	return result
@@ -76,7 +108,7 @@ func evalPrefixExpression(Operator string, right object.Object) object.Object {
 	case "-":
 		return evaluateMinusExpression(right)
 	default:
-		return NULL
+		return newError("Unknown operator %s %s", Operator, right.Type())
 	}
 }
 
@@ -95,7 +127,7 @@ func evaluateBangExpression(right object.Object) object.Object {
 
 func evaluateMinusExpression(right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return NULL
+		return newError("Unknown operator -%s", right.Type())
 	}
 	value := right.(*object.Integer).Value
 	return &object.Integer{
@@ -105,6 +137,8 @@ func evaluateMinusExpression(right object.Object) object.Object {
 
 func evalInfixExpression(operator string, left object.Object, right object.Object) object.Object {
 	switch {
+	case left.Type() != right.Type():
+		return newError("Operands are not of the same type : %s %s %s", left.Type(), operator, right.Type())
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evaluateIntegerInfixExpression(operator, left, right)
 	case operator == "==":
@@ -112,7 +146,7 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 	case operator == "!=":
 		return nativeBooltoBooleanObject(left != right)
 	default:
-		return NULL
+		return newError("Unknown Operator: %s %s %s", left.Type(), operator, right.Type())
 	}
 }
 
@@ -139,11 +173,14 @@ func evaluateIntegerInfixExpression(operator string, left object.Object, right o
 	case "==":
 		return nativeBooltoBooleanObject(leftVal == rightVal)
 	}
-	return NULL
+	return newError("Unknown Operator %s %s %s", left.Type(), operator, right.Type())
 }
 
 func evalIfExpression(node *ast.IfExpression) object.Object {
 	condition := Eval(node.Condition)
+	if isError(condition) {
+		return condition
+	}
 	if isTruthy(condition) {
 		return Eval(node.Consequence)
 	} else if node.Alternative != nil {
