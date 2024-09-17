@@ -7,11 +7,13 @@ import (
 
 	"github.com/nishokbanand/interpreter/evaluate"
 	"github.com/nishokbanand/interpreter/lexer"
+	"github.com/nishokbanand/interpreter/object"
 	"github.com/nishokbanand/interpreter/parser"
 )
 
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
+	env := object.NewEnvironment()
 	for {
 		fmt.Printf(">>")
 		scanned := scanner.Scan()
@@ -26,7 +28,7 @@ func Start(in io.Reader, out io.Writer) {
 			printParseErrors(out, parser.Errors())
 			continue
 		}
-		evaluated := evaluate.Eval(program)
+		evaluated := evaluate.Eval(program, env)
 		if evaluated != nil {
 			io.WriteString(out, evaluated.Inspect())
 			io.WriteString(out, "\n")
