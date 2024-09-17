@@ -48,7 +48,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		if isError(right) {
 			return right
 		}
-		return evalInfixExpression(node.Operator, left, right, env)
+		return evalInfixExpression(node.Operator, left, right)
 	case *ast.BlockStatement:
 		return evalStatements(node.Statements, env)
 	case *ast.IfExpression:
@@ -69,6 +69,20 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{
 			Value: node.Value,
 		}
+	case *ast.FunctionLiteral:
+		params := node.Parameters
+		body := node.Body
+		return &object.Function{Parameters: params, Body: body, Env: env}
+	case *ast.CallExpression:
+		function := Eval(node.Function, env)
+		if isError(function) {
+			return function
+		}
+		args := evalExpressions(node.Arguments, env)
+		if len(args) == 1 && isError(args[0]) {
+			return args[0]
+		}
+		return applyFunction(function, args)
 	}
 	return nil
 }
@@ -143,12 +157,12 @@ func evaluateMinusExpression(right object.Object) object.Object {
 	}
 }
 
-func evalInfixExpression(operator string, left object.Object, right object.Object, env *object.Environment) object.Object {
+func evalInfixExpression(operator string, left object.Object, right object.Object) object.Object {
 	switch {
 	case left.Type() != right.Type():
 		return newError("Operands are not of the same type : %s %s %s", left.Type(), operator, right.Type())
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
-		return evaluateIntegerInfixExpression(operator, left, right, env)
+		return evaluateIntegerInfixExpression(operator, left, right)
 	case operator == "==":
 		return nativeBooltoBooleanObject(left == right)
 	case operator == "!=":
@@ -158,7 +172,7 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 	}
 }
 
-func evaluateIntegerInfixExpression(operator string, left object.Object, right object.Object, env *object.Environment) object.Object {
+func evaluateIntegerInfixExpression(operator string, left object.Object, right object.Object) object.Object {
 	leftVal := left.(*object.Integer).Value
 	rightVal := right.(*object.Integer).Value
 	switch operator {
@@ -217,4 +231,41 @@ func evalIdentifier(node *ast.Identifier, env *object.Environment) object.Object
 		return newError("identifier not found %s", node.Value)
 	}
 	return val
+}
+
+func evalExpressions(exps []ast.ExpressionNode, env *object.Environment) []object.Object {
+	var result []object.Object
+	for _, e := range exps {
+		evaluated := Eval(e, env)
+		if isError(evaluated) {
+			return []object.Object{evaluated}
+		}
+		result = append(result, evaluated)
+	}
+	return result
+}
+
+func applyFunction(fn object.Object, args []object.Object) object.Object {
+	function, ok := fn.(*object.Function)
+	if !ok {
+		return newError("not a function %s :", function.Type())
+	}
+	extendedEnv := extendedFuncEnv(function, args)
+	evaluated := Eval(function.Body, extendedEnv)
+	return unwrappedValue(evaluated)
+}
+
+func extendedFuncEnv(f *object.Function, args []object.Object) *object.Environment {
+	extendedEnv := object.NewEnclosedEnvironment(f.Env)
+	for idx, param := range f.Parameters {
+		extendedEnv.Set(param.Value, args[idx])
+	}
+	return extendedEnv
+}
+
+func unwrappedValue(obj object.Object) object.Object {
+	if returnValue, ok := obj.(*object.ReturnValue); ok {
+		return returnValue.Value
+	}
+	return obj
 }

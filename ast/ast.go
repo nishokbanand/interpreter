@@ -203,7 +203,7 @@ func (bs *BlockStatement) String() string {
 type FunctionLiteral struct {
 	Token      token.Token //fn
 	Parameters []*Identifier
-	Body       BlockStatement
+	Body       *BlockStatement
 }
 
 func (fn *FunctionLiteral) TokenLiteral() string { return fn.Token.Literal }

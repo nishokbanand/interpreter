@@ -293,29 +293,29 @@ func (p *Parser) parseFunctionExpression() ast.ExpressionNode {
 	fnLiteral := &ast.FunctionLiteral{
 		Token: p.currToken,
 	}
-	if p.expectPeek(token.LPAREN) {
+	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
 	fnLiteral.Parameters = p.parseFunctionParameters()
-	if p.expectPeek(token.LBRACES) {
+	if !p.expectPeek(token.LBRACES) {
 		return nil
 	}
-	fnLiteral.Body = *p.parseBlockStatement()
+	fnLiteral.Body = p.parseBlockStatement()
 	return fnLiteral
 }
 
 func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 	identifiers := []*ast.Identifier{}
-	if p.expectPeek(token.RPAREN) {
+	if p.peekToken.Type == token.RPAREN {
 		//so we skip )
 		p.nextToken()
 		return identifiers
 	}
+	p.nextToken()
 	identifier := &ast.Identifier{
 		Token: p.currToken,
 		Value: p.currToken.Literal,
 	}
-	p.nextToken()
 	identifiers = append(identifiers, identifier)
 	for p.peekToken.Type == token.COMMA {
 		p.nextToken()
@@ -339,7 +339,8 @@ func (p *Parser) parseCallExpression(function ast.ExpressionNode) ast.Expression
 
 func (p *Parser) parseCallArguments() []ast.ExpressionNode {
 	args := []ast.ExpressionNode{}
-	if p.expectPeek(token.RPAREN) {
+	if p.peekToken.Type == token.RPAREN {
+		p.nextToken()
 		return args
 	}
 	p.nextToken()
