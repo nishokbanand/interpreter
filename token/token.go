@@ -26,6 +26,9 @@ const (
 	LBRACES   = "{"
 	RBRACES   = "}"
 	COMMA     = ","
+	LBRACKET  = "["
+	RBRACKET  = "]"
+	COLON     = ":"
 	//OPERATORS
 	SUM         = "+"
 	MINUS       = "-"
