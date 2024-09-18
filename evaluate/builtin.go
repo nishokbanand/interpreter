@@ -1,6 +1,10 @@
 package evaluate
 
-import "github.com/nishokbanand/interpreter/object"
+import (
+	"fmt"
+
+	"github.com/nishokbanand/interpreter/object"
+)
 
 var builtins = map[string]*object.Builtin{
 	"len": {
@@ -76,6 +80,14 @@ var builtins = map[string]*object.Builtin{
 			default:
 				return newError("argument to 'rest' not supported, got %s", arg.Type())
 			}
+		},
+	},
+	"print": {
+		Fn: func(args ...object.Object) object.Object {
+			for _, arg := range args {
+				fmt.Println(arg.Inspect())
+			}
+			return NULL
 		},
 	},
 }
