@@ -8,6 +8,6 @@ import (
 )
 
 func main() {
-	fmt.Println("repl starting")
+	fmt.Println("REPL starting")
 	repl.Start(os.Stdin, os.Stdout)
 }
