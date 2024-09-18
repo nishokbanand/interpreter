@@ -8,8 +8,9 @@ type Token struct {
 }
 
 const (
-	IDENT = "IDENT"
-	INT   = "INT"
+	IDENT  = "IDENT"
+	INT    = "INT"
+	STRING = "STRING"
 	//keywords
 	LET      = "LET"
 	FUNCTION = "FUNCTION"

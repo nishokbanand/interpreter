@@ -83,6 +83,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return args[0]
 		}
 		return applyFunction(function, args)
+	case *ast.String:
+		return &object.String{Value: node.Value}
 	}
 	return nil
 }
@@ -163,6 +165,8 @@ func evalInfixExpression(operator string, left object.Object, right object.Objec
 		return newError("Operands are not of the same type : %s %s %s", left.Type(), operator, right.Type())
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evaluateIntegerInfixExpression(operator, left, right)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evaluateStringInfixExpression(operator, left, right)
 	case operator == "==":
 		return nativeBooltoBooleanObject(left == right)
 	case operator == "!=":
@@ -268,4 +272,16 @@ func unwrappedValue(obj object.Object) object.Object {
 		return returnValue.Value
 	}
 	return obj
+}
+
+func evaluateStringInfixExpression(operator string, left object.Object, right object.Object) object.Object {
+	leftVal := left.(*object.String).Value
+	rightVal := right.(*object.String).Value
+	switch operator {
+	//int producing operators
+	case "+":
+		return &object.String{Value: (leftVal + rightVal)}
+	default:
+		return newError("Unknown Operator %s %s %s", left, operator, right)
+	}
 }

@@ -68,6 +68,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefixFns(token.FUNCTION, p.parseFunctionExpression)
 	p.registerPrefixFns(token.TRUE, p.parseBoolean)
 	p.registerPrefixFns(token.FALSE, p.parseBoolean)
+	p.registerPrefixFns(token.STRING, p.parseString)
 	//infix
 	p.infixfns = make(map[token.TokenType]InfixFns)
 	p.registerInfixFns(token.SUM, p.parseInfixExpression)
@@ -361,5 +362,12 @@ func (p *Parser) parseBoolean() ast.ExpressionNode {
 	return &ast.Boolean{
 		Token: p.currToken,
 		Value: p.currToken.Type == token.TRUE,
+	}
+}
+
+func (p *Parser) parseString() ast.ExpressionNode {
+	return &ast.String{
+		Token: p.currToken,
+		Value: p.currToken.Literal,
 	}
 }
